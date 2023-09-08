@@ -1,0 +1,12 @@
+*.tsbuildinfo
+*.log
+tests/
+src/
+.eslintrc.js
+jest.config.js
+.editorconfig
+.prettierrc
+yarn.lock
+.github/
+tsconfig.json
+.yarn/
