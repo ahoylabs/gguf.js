@@ -28,7 +28,7 @@ type MetadataBaseValue = string | number | bigint | boolean
 type MetadataArray = MetadataBaseValue[]
 type MetadataValue = MetadataBaseValue | MetadataArray
 
-type Version = 1 | 2
+type Version = 1 | 2 | 3
 const isVersion = (version: number): version is Version =>
   version === 1 || version === 2 || version === 3
 
@@ -134,6 +134,7 @@ const readVersionedSize = async (
       value = BigInt(n.value)
       break
     }
+    case 3:
     case 2: {
       const n = await readUint64(fd)
       if (n.error) return n
