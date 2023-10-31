@@ -1,6 +1,6 @@
 {
   "name": "gguf",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "MIT",
   "author": "Ben Williams <git@biwills.com>",
   "main": "dist/index.js",
@@ -17,7 +17,8 @@
     "size": "size-limit",
     "start": "dts watch",
     "generate-zodValidators": "ts-to-zod src/metadataTypes.ts src/zodValidators.ts",
-    "test": "dts test"
+    "test": "dts test",
+    "publish": "yarn build && yarn npm publish"
   },
   "jest": {
     "testEnvironment": "node"
