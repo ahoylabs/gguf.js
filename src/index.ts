@@ -30,7 +30,7 @@ type MetadataValue = MetadataBaseValue | MetadataArray
 
 type Version = 1 | 2
 const isVersion = (version: number): version is Version =>
-  version === 1 || version === 2
+  version === 1 || version === 2 || version === 3
 
 type NumberBytes = { error: Error } | { error: null; value: number }
 type BigIntBytes = { error: Error } | { error: null; value: bigint }
