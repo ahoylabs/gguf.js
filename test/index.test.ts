@@ -178,4 +178,54 @@ describe('gguf', () => {
     },
     1000 * 30,
   )
+
+  test(
+    'EveryoneLLM-7b.gguf',
+    async () => {
+      const file = await fetchPartialFile(
+        'https://huggingface.co/rombodawg/Everyone-LLM-7b-Base-GGUF/resolve/main/EveryoneLLM-7b.gguf',
+        0,
+        // 10mb
+        1024 * 1024 * 10,
+      )
+
+      const fileName = path.join(__dirname, 'models', 'EveryoneLLM-7b.gguf')
+
+      await writeFile(fileName, Buffer.from(file))
+
+      const { error, metadata } = await gguf(fileName)
+
+      expect(error).toBe(undefined)
+      expect(metadata).not.toBe(undefined)
+      if (!metadata) return // for types
+
+      expect(metadata.general.architecture).toBe('llama')
+      if (!isLlamaMetadata(metadata)) return // for types
+
+      expect(metadata.llama).toBeTruthy()
+
+      expect(metadata).toEqual({
+        general: {
+          architecture: 'llama',
+          file_type: 'MOSTLY_Q8_0',
+          name: 'E:\\Open_source_ai_chatbot\\OOBA_8\\text-generation-webui-main\\models',
+        },
+        llama: {
+          attention: {
+            head_count: 32,
+            head_count_kv: 8,
+            layer_norm_rms_epsilon: 0.000009999999747378752,
+          },
+          context_length: 32768,
+          embedding_length: 4096,
+          feed_forward_length: 14336,
+          rope: {
+            dimension_count: 128,
+            freq_base: 10000,
+          },
+        },
+      })
+    },
+    1000 * 30,
+  )
 })

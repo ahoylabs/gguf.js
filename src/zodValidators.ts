@@ -10,10 +10,9 @@ export const architectureTypeSchema = z.union([
   z.literal('bloom'),
   z.literal('falcon'),
   z.literal('rwkv'),
-  z.string().and(z.object({})),
 ])
 
-const baseGGUFMetadataSchema = z.object({
+export const baseGGUFMetadataSchema = z.object({
   alignment: z.number().optional(),
   author: z.string().optional(),
   description: z.string().optional(),
@@ -38,11 +37,16 @@ const baseGGUFMetadataSchema = z.object({
       z.literal('MOSTLY_Q5_K_S'),
       z.literal('MOSTLY_Q5_K_M'),
       z.literal('MOSTLY_Q6_K'),
+      z.literal('MOSTLY_IQ2_XXS'),
+      z.literal('MOSTLY_IQ2_XS'),
+      z.literal('MOSTLY_Q2_K_S'),
+      z.literal('MOSTLY_Q3_K_XS'),
+      z.literal('MOSTLY_IQ3_XXS'),
     ])
     .optional(),
   license: z.string().optional(),
   name: z.string().optional(),
-  quantization_version: z.number(),
+  quantization_version: z.number().optional(),
   source: z
     .object({
       huggingface: z
@@ -190,7 +194,7 @@ export const falconMetadataSchema = z.object({
     context_length: z.number(),
     embedding_length: z.number(),
     layer_count: z.number(),
-    tensor_data_layout: z.any(),
+    tensor_data_layout: z.string().optional(),
   }),
   general: baseGGUFMetadataSchema.and(
     z.object({

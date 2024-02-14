@@ -55,6 +55,11 @@ export type BaseGGUFMetadata = {
     | 'MOSTLY_Q5_K_S'
     | 'MOSTLY_Q5_K_M'
     | 'MOSTLY_Q6_K'
+    | 'MOSTLY_IQ2_XXS'
+    | 'MOSTLY_IQ2_XS'
+    | 'MOSTLY_Q2_K_S'
+    | 'MOSTLY_Q3_K_XS'
+    | 'MOSTLY_IQ3_XXS'
   /**
    * License of the model, expressed as a SPDX license expression
    * (e.g. `"MIT OR Apache-2.0`). *Should not* include any other information,
@@ -75,7 +80,7 @@ export type BaseGGUFMetadata = {
    * scheme's name (e.g. the quantization scheme is Q5_K, and the quantization
    * version is 4).
    **/
-  quantization_version: number
+  quantization_version?: number
   /**
    * Information about where this model came from. This is useful for tracking
    * the provenance of the model, and for finding the original source if the

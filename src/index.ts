@@ -368,6 +368,16 @@ const fileTypeIntToString = (
       return 'MOSTLY_Q5_K_M'
     case 18:
       return 'MOSTLY_Q6_K'
+    case 19:
+      return 'MOSTLY_IQ2_XXS'
+    case 20:
+      return 'MOSTLY_IQ2_XS'
+    case 21:
+      return 'MOSTLY_Q2_K_S'
+    case 22:
+      return 'MOSTLY_Q3_K_XS'
+    case 23:
+      return 'MOSTLY_IQ3_XXS'
     default:
       return undefined
   }
