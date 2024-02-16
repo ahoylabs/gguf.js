@@ -1,6 +1,6 @@
 {
   "name": "gguf",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "MIT",
   "author": "Ben Williams <git@biwills.com>",
   "main": "dist/index.js",
