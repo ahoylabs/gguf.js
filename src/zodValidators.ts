@@ -221,6 +221,11 @@ export const rWKVMetadataSchema = z.object({
 
 export const gemmaMetadataSchema = z.object({
   gemma: z.object({
+    attention: z.object({
+      head_count: z.number(),
+      head_count_kv: z.number().optional(),
+      layer_norm_rms_epsilon: z.number(),
+    }),
     block_count: z.number(),
     context_length: z.number(),
     embedding_length: z.number(),

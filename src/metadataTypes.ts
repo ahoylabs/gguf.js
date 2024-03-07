@@ -372,6 +372,16 @@ export type RWKVMetadata = {
 
 export type GemmaMetadata = {
   gemma: {
+    attention: {
+      /** Also known as n_head. Number of attention heads. */
+      head_count: number
+      /** The number of heads per group used in Grouped-Query-Attention. If not
+       * present or if present and equal to [llm].attention.head_count, the model
+       * does not use GQA. */
+      head_count_kv?: number
+      /** Layer RMS normalization epsilon. */
+      layer_norm_rms_epsilon: number
+    }
     block_count: number
     /** Length of the context used during training or fine-tuning. RWKV is able
      * to handle larger context than this limit, but the output quality
