@@ -10,6 +10,7 @@ export type ArchitectureType =
   | 'gpt2'
   | 'bloom'
   | 'falcon'
+  | 'gemma'
   | 'rwkv'
 
 export type BaseGGUFMetadata = {
@@ -369,6 +370,27 @@ export type RWKVMetadata = {
   }
 }
 
+export type GemmaMetadata = {
+  gemma: {
+    block_count: number
+    /** Length of the context used during training or fine-tuning. RWKV is able
+     * to handle larger context than this limit, but the output quality
+     * may suffer. */
+    context_length: number
+    /** Also known as n_embd. Embedding layer size. */
+    embedding_length: number
+    /** Also known as n_ff. The length of the feedforward layer. */
+    feed_forward_length: number
+  }
+  general: BaseGGUFMetadata & {
+    /**
+     * describes what architecture this model implements. All lowercase ASCII,
+     * with only [a-z0-9]+ characters allowed.
+     **/
+    architecture: 'gemma'
+  }
+}
+
 export type WhisperMetadata = {
   general: BaseGGUFMetadata & {
     /**
@@ -416,5 +438,6 @@ export type GGUFMetadata =
   | GPT2Metadata
   | BloomMetadata
   | FalconMetadata
+  | GemmaMetadata
   | RWKVMetadata
   | WhisperMetadata
