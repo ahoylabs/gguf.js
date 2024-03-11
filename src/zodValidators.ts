@@ -9,6 +9,7 @@ export const architectureTypeSchema = z.union([
   z.literal('gpt2'),
   z.literal('bloom'),
   z.literal('falcon'),
+  z.literal('gemma'),
   z.literal('rwkv'),
 ])
 
@@ -218,6 +219,25 @@ export const rWKVMetadataSchema = z.object({
   }),
 })
 
+export const gemmaMetadataSchema = z.object({
+  gemma: z.object({
+    attention: z.object({
+      head_count: z.number(),
+      head_count_kv: z.number().optional(),
+      layer_norm_rms_epsilon: z.number(),
+    }),
+    block_count: z.number(),
+    context_length: z.number(),
+    embedding_length: z.number(),
+    feed_forward_length: z.number(),
+  }),
+  general: baseGGUFMetadataSchema.and(
+    z.object({
+      architecture: z.literal('gemma'),
+    }),
+  ),
+})
+
 export const whisperMetadataSchema = z.object({
   general: baseGGUFMetadataSchema.and(
     z.object({
@@ -253,6 +273,7 @@ export const gGUFMetadataSchema = z.union([
   gPT2MetadataSchema,
   bloomMetadataSchema,
   falconMetadataSchema,
+  gemmaMetadataSchema,
   rWKVMetadataSchema,
   whisperMetadataSchema,
 ])

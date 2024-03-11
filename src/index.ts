@@ -5,6 +5,7 @@ import type {
   BaseGGUFMetadata,
   BloomMetadata,
   FalconMetadata,
+  GemmaMetadata,
   GGUFMetadata,
   GPT2Metadata,
   GPTJMetadata,
@@ -16,6 +17,7 @@ import type {
 import {
   bloomMetadataSchema,
   falconMetadataSchema,
+  gemmaMetadataSchema,
   gPT2MetadataSchema,
   gPTJMetadataSchema,
   gPTNeoXMetadataSchema,
@@ -263,6 +265,7 @@ const isValidArchitecture = (
     'gpt2',
     'bloom',
     'falcon',
+    'gemma',
     'rwkv',
   ].includes(architecture)
 }
@@ -314,6 +317,11 @@ const validateMetadata = (
     }
     case 'falcon': {
       const res = falconMetadataSchema.safeParse(metadata)
+      if (res.success === false) return { error: res.error }
+      return { metadata: res.data }
+    }
+    case 'gemma': {
+      const res = gemmaMetadataSchema.safeParse(metadata)
       if (res.success === false) return { error: res.error }
       return { metadata: res.data }
     }
@@ -602,6 +610,12 @@ export const isFalconMetadata = (
   metadata: GGUFMetadata,
 ): metadata is FalconMetadata => {
   return metadata.general.architecture === 'falcon'
+}
+
+export const isGemmaMetadata = (
+  metadata: GGUFMetadata,
+): metadata is GemmaMetadata => {
+  return metadata.general.architecture === 'gemma'
 }
 
 export const isRWKVMetadata = (
