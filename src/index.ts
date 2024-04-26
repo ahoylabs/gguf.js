@@ -395,7 +395,12 @@ type ParsedMetadata =
   | { error: Error; metadata?: undefined }
   | { error?: undefined; metadata: GGUFMetadata }
 
-const parseMetadata = async (filePath: string): Promise<ParsedMetadata> => {
+type RawMetadata =
+  | { error: Error }
+  | { error?: null; metadata: Record<string, any> }
+export const parseRawMetadata = async (
+  filePath: string,
+): Promise<RawMetadata> => {
   const metadata = await new Promise<
     { error: Error } | { error?: null; metadata: Record<string, any> }
   >((resolve) => {
@@ -553,6 +558,12 @@ const parseMetadata = async (filePath: string): Promise<ParsedMetadata> => {
       return resolve({ error: null, metadata })
     })
   })
+
+  return metadata
+}
+
+const parseMetadata = async (filePath: string): Promise<ParsedMetadata> => {
+  const metadata = await parseRawMetadata(filePath)
 
   if (metadata.error) return { error: metadata.error }
 
