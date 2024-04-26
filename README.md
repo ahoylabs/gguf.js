@@ -16,6 +16,7 @@ Supported Architectures
 - `Bloom`
 - `Falcon`
 - `RWKV`
+- `Gemma`
 
 This library goal is to be 1-to-1 with [the spec](https://github.com/philpax/ggml/blob/gguf-spec/docs/gguf.md). PRs welcome!
 
