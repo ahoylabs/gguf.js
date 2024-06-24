@@ -39,74 +39,100 @@ type BigIntBytes = { error: Error } | { error: null; value: bigint }
 
 const ggufMagicNumber = Buffer.from([0x47, 0x47, 0x55, 0x46]).readInt32LE()
 
+const fileChunkSize = 10 * 1024 * 1024
+
+type GGUFFile = { data: Buffer; offset: number }
+
+const readFileChunk = async (
+  fd: number,
+  file: GGUFFile,
+): Promise<Error | null> => {
+  const buffer = Buffer.alloc(fileChunkSize)
+  const { bytesRead } = await fs.read(fd, buffer, 0, fileChunkSize, null)
+  if (bytesRead !== fileChunkSize) {
+    return new Error('unexpected bytes read')
+  }
+  file.data = Buffer.concat([file.data, buffer])
+  return null
+}
+
 const readNBytes = async (
   fd: number,
   numBytes: number,
+  file: GGUFFile,
 ): Promise<{ error: Error } | { bytes: Buffer; error?: undefined }> => {
-  const buffer = Buffer.alloc(numBytes)
-  const { bytesRead } = await fs.read(fd, buffer, 0, numBytes, null)
-  if (bytesRead !== numBytes) {
-    return { error: new Error('unexpected bytes read') }
+  const end = file.offset + numBytes
+  if (end > file.data.length) {
+    const err = await readFileChunk(fd, file)
+    if (err) return { error: err }
   }
+  const buffer = file.data.subarray(file.offset, end)
+  file.offset = end
   return { bytes: buffer }
 }
 
-const readUint8 = async (fd: number): Promise<NumberBytes> => {
-  const bytes = await readNBytes(fd, 1)
+const readUint8 = async (fd: number, file: GGUFFile): Promise<NumberBytes> => {
+  const bytes = await readNBytes(fd, 1, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readUInt8() }
 }
 
-const readUint16 = async (fd: number): Promise<NumberBytes> => {
-  const bytes = await readNBytes(fd, 2)
+const readUint16 = async (fd: number, file: GGUFFile): Promise<NumberBytes> => {
+  const bytes = await readNBytes(fd, 2, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readUInt16LE() }
 }
 
-const readUint32 = async (fd: number): Promise<NumberBytes> => {
-  const bytes = await readNBytes(fd, 4)
+const readUint32 = async (fd: number, file: GGUFFile): Promise<NumberBytes> => {
+  const bytes = await readNBytes(fd, 4, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readUInt32LE() }
 }
 
-const readUint64 = async (fd: number): Promise<BigIntBytes> => {
-  const bytes = await readNBytes(fd, 8)
+const readUint64 = async (fd: number, file: GGUFFile): Promise<BigIntBytes> => {
+  const bytes = await readNBytes(fd, 8, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readBigUInt64LE() }
 }
 
-const readInt8 = async (fd: number): Promise<NumberBytes> => {
-  const bytes = await readNBytes(fd, 1)
+const readInt8 = async (fd: number, file: GGUFFile): Promise<NumberBytes> => {
+  const bytes = await readNBytes(fd, 1, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readInt8() }
 }
 
-const readInt16 = async (fd: number): Promise<NumberBytes> => {
-  const bytes = await readNBytes(fd, 2)
+const readInt16 = async (fd: number, file: GGUFFile): Promise<NumberBytes> => {
+  const bytes = await readNBytes(fd, 2, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readInt16LE() }
 }
 
-const readInt32 = async (fd: number): Promise<NumberBytes> => {
-  const bytes = await readNBytes(fd, 4)
+const readInt32 = async (fd: number, file: GGUFFile): Promise<NumberBytes> => {
+  const bytes = await readNBytes(fd, 4, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readInt32LE() }
 }
 
-const readInt64 = async (fd: number): Promise<BigIntBytes> => {
-  const bytes = await readNBytes(fd, 8)
+const readInt64 = async (fd: number, file: GGUFFile): Promise<BigIntBytes> => {
+  const bytes = await readNBytes(fd, 8, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readBigInt64LE() }
 }
 
-const readFloat32 = async (fd: number): Promise<NumberBytes> => {
-  const bytes = await readNBytes(fd, 4)
+const readFloat32 = async (
+  fd: number,
+  file: GGUFFile,
+): Promise<NumberBytes> => {
+  const bytes = await readNBytes(fd, 4, file)
   if (bytes.error) return bytes
   return { error: null, value: bytes.bytes.readFloatLE() }
 }
 
-const readFloat64 = async (fd: number): Promise<NumberBytes> => {
-  const bytes = await readNBytes(fd, 8)
+const readFloat64 = async (
+  fd: number,
+  file: GGUFFile,
+): Promise<NumberBytes> => {
+  const bytes = await readNBytes(fd, 8, file)
   if (bytes.error) return bytes
   const arrayBuffer = new ArrayBuffer(8)
   const view = new DataView(arrayBuffer)
@@ -118,8 +144,9 @@ const readFloat64 = async (fd: number): Promise<NumberBytes> => {
 
 const readBool = async (
   fd: number,
+  file: GGUFFile,
 ): Promise<{ error: Error } | { error: null; value: boolean }> => {
-  const bytes = await readNBytes(fd, 1)
+  const bytes = await readNBytes(fd, 1, file)
   if (bytes.error) return bytes
   return { error: null, value: !!bytes.bytes.readUint8() }
 }
@@ -127,18 +154,19 @@ const readBool = async (
 const readVersionedSize = async (
   fd: number,
   version: Version,
+  file: GGUFFile,
 ): Promise<BigIntBytes> => {
   let value: bigint
   switch (version) {
     case 1: {
-      const n = await readUint32(fd)
+      const n = await readUint32(fd, file)
       if (n.error) return n
       value = BigInt(n.value)
       break
     }
     case 3:
     case 2: {
-      const n = await readUint64(fd)
+      const n = await readUint64(fd, file)
       if (n.error) return n
       value = n.value
       break
@@ -150,10 +178,11 @@ const readVersionedSize = async (
 const readString = async (
   fd: number,
   version: Version,
+  file: GGUFFile,
 ): Promise<{ error: Error } | { error: null; value: string }> => {
-  const nBytes = await readVersionedSize(fd, version)
+  const nBytes = await readVersionedSize(fd, version, file)
   if (nBytes.error) return nBytes
-  const strBuffer = await readNBytes(fd, Number(nBytes.value)) // TODO: fix cast
+  const strBuffer = await readNBytes(fd, Number(nBytes.value), file) // TODO: fix cast
   if (strBuffer.error) return strBuffer
   return {
     error: null,
@@ -165,82 +194,83 @@ const readString = async (
 const readArray = async (
   fd: number,
   version: Version,
+  file: GGUFFile,
 ): Promise<{ error: Error } | { error: null; value: MetadataArray }> => {
-  const arrType = await readUint32(fd)
+  const arrType = await readUint32(fd, file)
   if (arrType.error) return arrType
-  const numElts = await readVersionedSize(fd, version)
+  const numElts = await readVersionedSize(fd, version, file)
   if (numElts.error) return numElts
   const ret: MetadataArray = []
   for (let i = 0; i < numElts.value; ++i) {
     switch (arrType.value) {
       case 0: {
-        const value = await readUint8(fd)
+        const value = await readUint8(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 1: {
-        const value = await readInt8(fd)
+        const value = await readInt8(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 2: {
-        const value = await readUint16(fd)
+        const value = await readUint16(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 3: {
-        const value = await readInt16(fd)
+        const value = await readInt16(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 4: {
-        const value = await readUint32(fd)
+        const value = await readUint32(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 5: {
-        const value = await readInt32(fd)
+        const value = await readInt32(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 6: {
-        const value = await readFloat32(fd)
+        const value = await readFloat32(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 7: {
-        const value = await readBool(fd)
+        const value = await readBool(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 8: {
-        const value = await readString(fd, version)
+        const value = await readString(fd, version, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 10: {
-        const value = await readUint64(fd)
+        const value = await readUint64(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 11: {
-        const value = await readInt64(fd)
+        const value = await readInt64(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
       }
       case 12: {
-        const value = await readFloat64(fd)
+        const value = await readFloat64(fd, file)
         if (value.error) return value
         ret.push(value.value)
         break
@@ -398,168 +428,162 @@ type ParsedMetadata =
 type RawMetadata =
   | { error: Error }
   | { error?: null; metadata: Record<string, any> }
+
 export const parseRawMetadata = async (
   filePath: string,
 ): Promise<RawMetadata> => {
-  const metadata = await new Promise<
-    { error: Error } | { error?: null; metadata: Record<string, any> }
-  >((resolve) => {
-    fs.open(filePath, 'r', async (error, fd) => {
-      if (error) resolve({ error })
+  const fd = await fs.open(filePath, 'r')
+  const file: GGUFFile = { data: Buffer.from([]), offset: 0 }
 
-      const magic = await readUint32(fd)
-      if (magic.error) return resolve(magic)
-      if (magic.value !== ggufMagicNumber) {
-        return resolve({ error: new Error('invalid gguf magic number') })
+  const magic = await readUint32(fd, file)
+  if (magic.error) return magic
+  if (magic.value !== ggufMagicNumber) {
+    return { error: new Error('invalid gguf magic number') }
+  }
+
+  const version = await readUint32(fd, file)
+  if (version.error) return version
+  if (!isVersion(version.value)) {
+    return {
+      error: new Error(`unsupported gguf version: ${version.value}`),
+    }
+  }
+
+  const tensorCount = await readVersionedSize(fd, version.value, file)
+  if (tensorCount.error) return tensorCount
+
+  const numKv = await readVersionedSize(fd, version.value, file)
+  if (numKv.error) return numKv
+
+  const metadata: Record<string, any> = {}
+
+  const setKey = (keyName: string, value: MetadataValue) => {
+    // this is a bad way to write this and should be clean it up
+    // but since there are never more than 3 layers currently, it's fine for now
+    const [key1, key2, key3, key4, key5] = keyName.split('.')
+
+    if (!key2) {
+      metadata[key1] = value
+      return
+    }
+    if (!key3) {
+      if (!metadata[key1]) metadata[key1] = {}
+      metadata[key1][key2] = value
+      return
+    }
+    if (!key4) {
+      if (!metadata[key1]) metadata[key1] = {}
+      if (!metadata[key1][key2]) metadata[key1][key2] = {}
+      metadata[key1][key2][key3] = value
+      return
+    }
+    if (!key5) {
+      if (!metadata[key1]) metadata[key1] = {}
+      if (!metadata[key1][key2]) metadata[key1][key2] = {}
+      if (!metadata[key1][key2][key3]) metadata[key1][key2][key3] = {}
+      metadata[key1][key2][key3][key4] = value
+      return
+    }
+    if (!metadata[key1]) metadata[key1] = {}
+    if (!metadata[key1][key2]) metadata[key1][key2] = {}
+    if (!metadata[key1][key2][key3]) metadata[key1][key2][key3] = {}
+    if (!metadata[key1][key2][key3][key4]) {
+      metadata[key1][key2][key3][key4] = {}
+    }
+    metadata[key1][key2][key3][key4][key5] = value
+  }
+
+  for (let i = 0; i < numKv.value; ++i) {
+    const key = await readString(fd, version.value, file)
+    if (key.error) return key
+    const keyType = await readUint32(fd, file)
+    if (keyType.error) return keyType
+    switch (keyType.value) {
+      case 0: {
+        const value = await readUint8(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+
+        break
       }
-
-      const version = await readUint32(fd)
-      if (version.error) return resolve(version)
-      if (!isVersion(version.value)) {
-        return resolve({
-          error: new Error(`unsupported gguf version: ${version.value}`),
-        })
+      case 1: {
+        const value = await readInt8(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
       }
-
-      const tensorCount = await readVersionedSize(fd, version.value)
-      if (tensorCount.error) return resolve(tensorCount)
-
-      const numKv = await readVersionedSize(fd, version.value)
-      if (numKv.error) return resolve(numKv)
-
-      const metadata: Record<string, any> = {}
-
-      const setKey = (keyName: string, value: MetadataValue) => {
-        // this is a bad way to write this and should be clean it up
-        // but since there are never more than 3 layers currently, it's fine for now
-        const [key1, key2, key3, key4, key5] = keyName.split('.')
-
-        if (!key2) {
-          metadata[key1] = value
-          return
-        }
-        if (!key3) {
-          if (!metadata[key1]) metadata[key1] = {}
-          metadata[key1][key2] = value
-          return
-        }
-        if (!key4) {
-          if (!metadata[key1]) metadata[key1] = {}
-          if (!metadata[key1][key2]) metadata[key1][key2] = {}
-          metadata[key1][key2][key3] = value
-          return
-        }
-        if (!key5) {
-          if (!metadata[key1]) metadata[key1] = {}
-          if (!metadata[key1][key2]) metadata[key1][key2] = {}
-          if (!metadata[key1][key2][key3]) metadata[key1][key2][key3] = {}
-          metadata[key1][key2][key3][key4] = value
-          return
-        }
-        if (!metadata[key1]) metadata[key1] = {}
-        if (!metadata[key1][key2]) metadata[key1][key2] = {}
-        if (!metadata[key1][key2][key3]) metadata[key1][key2][key3] = {}
-        if (!metadata[key1][key2][key3][key4]) {
-          metadata[key1][key2][key3][key4] = {}
-        }
-        metadata[key1][key2][key3][key4][key5] = value
+      case 2: {
+        const value = await readUint16(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
       }
-
-      for (let i = 0; i < numKv.value; ++i) {
-        const key = await readString(fd, version.value)
-        if (key.error) return resolve(key)
-        const keyType = await readUint32(fd)
-        if (keyType.error) return resolve(keyType)
-        switch (keyType.value) {
-          case 0: {
-            const value = await readUint8(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-
-            break
-          }
-          case 1: {
-            const value = await readInt8(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 2: {
-            const value = await readUint16(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 3: {
-            const value = await readInt16(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 4: {
-            const value = await readUint32(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 5: {
-            const value = await readInt32(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 6: {
-            const value = await readFloat32(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 7: {
-            const value = await readBool(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 8: {
-            const value = await readString(fd, version.value)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 9: {
-            const value = await readArray(fd, version.value)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 10: {
-            const value = await readUint64(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 11: {
-            const value = await readInt64(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          case 12: {
-            const value = await readFloat64(fd)
-            if (value.error) return resolve(value)
-            setKey(key.value, value.value)
-            break
-          }
-          default: {
-            return resolve({ error: new Error('unknown metadata key type') })
-          }
-        }
+      case 3: {
+        const value = await readInt16(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
       }
-      return resolve({ error: null, metadata })
-    })
-  })
-
-  return metadata
+      case 4: {
+        const value = await readUint32(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      case 5: {
+        const value = await readInt32(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      case 6: {
+        const value = await readFloat32(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      case 7: {
+        const value = await readBool(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      case 8: {
+        const value = await readString(fd, version.value, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      case 9: {
+        const value = await readArray(fd, version.value, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      case 10: {
+        const value = await readUint64(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      case 11: {
+        const value = await readInt64(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      case 12: {
+        const value = await readFloat64(fd, file)
+        if (value.error) return value
+        setKey(key.value, value.value)
+        break
+      }
+      default: {
+        return { error: new Error('unknown metadata key type') }
+      }
+    }
+  }
+  return { error: null, metadata }
 }
 
 const parseMetadata = async (filePath: string): Promise<ParsedMetadata> => {
