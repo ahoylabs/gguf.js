@@ -1,6 +1,6 @@
 <h1 align="center">GGUF.js</h1>
 
-<h3 align="center">Download, manage, and run Llama GGUF files easily with <a href="https://faraday.dev">Faraday.dev</a></h3>
+<h3 align="center">Download, manage, and run Llama GGUF files easily with <a href="https://backyard.ai">Backyard.ai</a></h3>
 
 ![gguf](https://github.com/Oblomov/clinfo/assets/6139501/748f2773-1b4f-4d55-9353-6fb68b7bf603)
 
@@ -58,4 +58,4 @@ Typescript is supported by default and all definitions are in [`src/metadataType
 
 ## License
 
-MIT © [Ahoy Labs, Inc.](https://faraday.dev)
+MIT © [Ahoy Labs, Inc.](https://backyard.ai)
