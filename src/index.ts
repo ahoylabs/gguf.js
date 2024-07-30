@@ -444,39 +444,19 @@ export const parseRawMetadata = async (
   const metadata: Record<string, any> = {}
 
   const setKey = (keyName: string, value: MetadataValue) => {
-    // this is a bad way to write this and should be clean it up
-    // but since there are never more than 3 layers currently, it's fine for now
-    const [key1, key2, key3, key4, key5] = keyName.split('.')
-
-    if (!key2) {
-      metadata[key1] = value
-      return
+    const keys = keyName.split('.')
+    let obj = metadata
+    for (const [index, key] of keys.entries()) {
+      if (!index) continue
+      const prevKey = keys[index - 1]
+      if (!obj[prevKey]) obj[prevKey] = {}
+      if (index === keys.length - 1) {
+        if (typeof obj[prevKey] === 'object') {
+          obj[prevKey][key] = value
+        }
+      }
+      obj = obj[prevKey]
     }
-    if (!key3) {
-      if (!metadata[key1]) metadata[key1] = {}
-      metadata[key1][key2] = value
-      return
-    }
-    if (!key4) {
-      if (!metadata[key1]) metadata[key1] = {}
-      if (!metadata[key1][key2]) metadata[key1][key2] = {}
-      metadata[key1][key2][key3] = value
-      return
-    }
-    if (!key5) {
-      if (!metadata[key1]) metadata[key1] = {}
-      if (!metadata[key1][key2]) metadata[key1][key2] = {}
-      if (!metadata[key1][key2][key3]) metadata[key1][key2][key3] = {}
-      metadata[key1][key2][key3][key4] = value
-      return
-    }
-    if (!metadata[key1]) metadata[key1] = {}
-    if (!metadata[key1][key2]) metadata[key1][key2] = {}
-    if (!metadata[key1][key2][key3]) metadata[key1][key2][key3] = {}
-    if (!metadata[key1][key2][key3][key4]) {
-      metadata[key1][key2][key3][key4] = {}
-    }
-    metadata[key1][key2][key3][key4][key5] = value
   }
 
   for (let i = 0; i < numKv.value; ++i) {
