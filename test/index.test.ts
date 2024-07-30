@@ -297,7 +297,7 @@ describe('gguf', () => {
       const fileName = path.join(
         __dirname,
         'models',
-        'L3-8B-Stheno-v3.3-32K.Q8_0.gguf',
+        'DarkForest-20B-v3.0.IQ1_M.gguf',
       )
 
       await writeFile(fileName, Buffer.from(file))
